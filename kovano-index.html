@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <title>Kovano Coffee</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-GLhlTQ8iRABdZLl6O3oVMWSktQOp6b7In1Zl3/Jr59b6EGGoI1aFkw7cmDA6j6gD" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js" integrity="sha384-w76AqPfDkMBDXo30jS1Sgez6pr3x5MlQ1ZAGC+nuZB+EYdgRZgiwxhTBTkF7CXvN" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.3.0/css/all.min.css">
+</head>
+<body>
+    <div style="display: flex; align-items: center; justify-content: center; ">
+        <img style="background-color: #2F2E2E; border-radius: 10px; margin: 20px; padding: 20px; width: 300px; height: 103px;" src="https://static.wixstatic.com/media/c87e7e_56026321309d4ae1a1709201ebff4698~mv2.png/v1/fill/w_596,h_116,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/BLACK%20kovano%20logo_edited_edited.png" />
+    </div>
+    <div style="display: flex; align-items: center; justify-content: center; ">
+        <div style="width: 400px;">
+            <form id="qrForm">
+                <div class="mb-3">
+                    <label for="exampleFormControlInput1" class="form-label">Mobile</label>
+                    <input type="text" class="form-control" id="mobile" placeholder="05xxxxxxxxx" required>
+                </div>
+                <div class="mb-3">
+                    <label for="exampleFormControlTextarea1" class="form-label">Name</label>
+                    <input type="text" class="form-control" id="name" required>
+                </div>
+
+                <div class="mb-3" id="earnsdiv">
+                </div>
+                <div class="mb-3" id="pointsdiv">
+                </div>
+                
+                <div style="display: flex; justify-content: center;">
+                    <input type="submit" value="Generate QR Code"/>
+                    <!-- <button style="width: 200px;" id="generateBtn">Generat QR code</button> -->
+                </div>
+                <div style="display: flex; justify-content: center; margin-top: 30px;">
+                    <div id="qrcode"></div>
+                </div>
+            </form>
+            
+        </div>
+    </div>
+    <script type="module">
+        // Import the functions you need from the SDKs you need
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-analytics.js";
+        // TODO: Add SDKs for Firebase products that you want to use
+        // https://firebase.google.com/docs/web/setup#available-libraries
+      
+        // Your web app's Firebase configuration
+        // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+        const firebaseConfig = {
+          apiKey: "AIzaSyCZstEalhuvKLbYiSB0l-S8zFZmDJKX-cw",
+          authDomain: "kafe-customer-loyalty.firebaseapp.com",
+          databaseURL: "https://kafe-customer-loyalty-default-rtdb.firebaseio.com",
+          projectId: "kafe-customer-loyalty",
+          storageBucket: "kafe-customer-loyalty.appspot.com",
+          messagingSenderId: "591598725298",
+          appId: "1:591598725298:web:62f7a9f2336f0a0303c1ab",
+          measurementId: "G-WP5K27SLT8"
+        };
+      
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const analytics = getAnalytics(app);
+
+        import { getDatabase, ref, set, onValue, child, update, remove} from "https://www.gstatic.com/firebasejs/9.17.1/firebase-database.js";
+
+        const db = getDatabase();
+
+        function renderScores(earns, points) {
+            const earnsdiv = document.getElementById("earnsdiv");
+            const pointsdiv = document.getElementById("pointsdiv");
+
+            earnsdiv.innerHTML = "earns: ";
+            pointsdiv.innerHTML = "points: ";
+
+            for (var i = 1; i <= earns; i++) {
+                earnsdiv.innerHTML += '<i class="fa fa-coffee fa-lg" aria-hidden="true"></i>';
+            }
+
+            for (var i = 1; i <= 10; i++) {
+                if (i <= points)
+                    pointsdiv.innerHTML += '<i class="fa fa-coffee fa-lg" aria-hidden="true"></i>';
+                else
+                    pointsdiv.innerHTML += '<i class="fa fa-coffee fa-lg" style="opacity:0.5;" aria-hidden="true"></i>';
+            }
+        }
+
+        function getData() {
+            var mobile = document.getElementById("mobile").value;
+            if (mobile.length > 0) {
+                const dbref = ref(db, "/kovano/customers/" + mobile);
+                onValue(dbref, (snapshot) => {
+                    if (snapshot.exists()) {
+                        const {score, gifts} = snapshot.val();
+                        renderScores(gifts, score)
+                    } else {
+                        console.log("no data found")
+                    }
+                })
+            }
+        }
+
+        function qr(e) {
+            e.preventDefault();
+
+            var name = document.getElementById("name");
+            var mobile = document.getElementById("mobile");
+            getData(mobile)
+            document.getElementById("qrcode").innerText = "";
+            if (mobile.value && name.value)
+                var qrcode = new QRCode(document.getElementById("qrcode"), {
+                    text: `${name.value}||${mobile.value}`,
+                    width: 200, 
+                    height: 200,
+                    colorDark: "#000000",
+                    colorLight: "#ffffff",
+                    correctLevel: QRCode.CorrectLevel.H
+                })
+        }
+
+        const qrForm = document.getElementById("qrForm");
+        qrForm.addEventListener('submit', qr)
+      </script>
+</body>
+</html>
